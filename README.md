@@ -1,5 +1,5 @@
 
-# 🚗 FIUS Based Infant Detection in Car Seats
+# 🚗 FIUS Based Infant Detection in Car Seat
 
 This project uses ultrasonic sensors and machine learning to detect:
 
