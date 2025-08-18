@@ -1,5 +1,5 @@
 
-# 🚗 FIUS Based Infant Detection in Car Seat
+# FIUS Based Infant Detection in Car Seat
 
 This project uses ultrasonic sensors and machine learning to detect:
 
@@ -11,7 +11,7 @@ Built as part of the **Autonomous Intelligent Systems and Machine Learning** mod
 
 ---
 
-## 🧠 Project Overview
+## Project Overview
 
 Traditional sensors like cameras face challenges in low light or privacy-sensitive environments. This project proposes a non-visual, ultrasonic-based approach using:
 
@@ -21,18 +21,18 @@ Traditional sensors like cameras face challenges in low light or privacy-sensiti
 
 ---
 
-## 🧪 Key Features
+## Key Features
 
-* 🚗 Detects **presence of infant car seat** and **baby**
-* 🧺 Works even with **blanket or sunscreen obstructions**
-* 📊 Real-time data collection using Red Pitaya + SRF02 sensors
-* 🔍 Signal preprocessing using FFT
-* 🧠 ML models: XGBoost, MLP, Random Forest, SVM
-* 📈 Evaluated with confusion matrices and classification reports
+* Detects **presence of infant car seat** and **baby**
+* Works even with **blanket or sunscreen obstructions**
+* Real-time data collection using Red Pitaya + SRF02 sensors
+* Signal preprocessing using FFT
+* ML models: XGBoost, MLP, Random Forest, SVM
+* Evaluated with confusion matrices and classification reports
 
 ---
 
-## 🏗️ Architecture
+## Architecture
 
 ### 📡 Hardware
 
@@ -41,7 +41,7 @@ Traditional sensors like cameras face challenges in low light or privacy-sensiti
 * Baby dolls used to simulate infant presence
 * Test environment: *Ford Fiesta v16* in controlled conditions
 
-### 💻 Software & Tools
+### Software & Tools
 
 * Python (NumPy, Scikit-learn, Pandas, XGBoost)
 * GUI tool for Red Pitaya data acquisition via UDP
@@ -50,7 +50,7 @@ Traditional sensors like cameras face challenges in low light or privacy-sensiti
 
 ---
 
-## ⚙️ ML Tasks & Models
+## ML Tasks & Models
 
 | Task  | Description                         | Models Used        |
 | ----- | ----------------------------------- | ------------------ |
@@ -67,7 +67,7 @@ Traditional sensors like cameras face challenges in low light or privacy-sensiti
 
 ---
 
-## 📊 Results Summary
+## Results Summary
 
 | Model             | Raw Data Accuracy | After Feature Extraction | Final Accuracy (Feature Selected) |
 | ----------------- | ----------------- | ------------------------ | --------------------------------- |
@@ -75,12 +75,12 @@ Traditional sensors like cameras face challenges in low light or privacy-sensiti
 | **MLP**           | \~55%             | 100% (overfit)           | **90.42%**                        |
 | **Random Forest** | \~57%             | 100% (overfit)           | Improved after selection          |
 
-✅ Feature selection using correlation matrix improved generalization
-📉 Addressed overfitting by dropping redundant features
+* Feature selection using correlation matrix improved generalization
+* Addressed overfitting by dropping redundant features
 
 ---
 
-## 📂 Dataset Summary
+## Dataset Summary
 
 * **Total samples:** 129,000
 * **Tasks:**
@@ -92,7 +92,7 @@ Traditional sensors like cameras face challenges in low light or privacy-sensiti
 
 ---
 
-## 📷 Visuals
+## Visuals
 
 * Sensor mounted at 28° angle on dashboard
 * Baby dolls in seated, lying, strapped positions
@@ -101,7 +101,7 @@ Traditional sensors like cameras face challenges in low light or privacy-sensiti
 
 ---
 
-## 👨‍💻 Authors
+## Authors
 
 * **Anushruthpal Keshavathi Jayapal**
 * **Aswini Thirumaran**
@@ -110,13 +110,13 @@ Traditional sensors like cameras face challenges in low light or privacy-sensiti
 
 ---
 
-## 📜 License
+## License
 
 This project is for academic and research purposes. Contact authors for reuse or collaboration.
 
 ---
 
-## 📧 Contact
+## Contact
 
 For inquiries or collaboration:
 
