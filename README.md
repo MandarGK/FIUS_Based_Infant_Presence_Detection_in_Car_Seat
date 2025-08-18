@@ -34,7 +34,7 @@ Traditional sensors like cameras face challenges in low light or privacy-sensiti
 
 ## Architecture
 
-### 📡 Hardware
+### Hardware
 
 * **Red Pitaya** measurement board
 * **FIUS Ultrasonic Sensor** (SRF02)
