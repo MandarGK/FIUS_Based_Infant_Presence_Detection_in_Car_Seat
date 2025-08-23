@@ -281,18 +281,24 @@ def show_notebook_output_in_tab(original_nb_path):
 # --------------------------
 # Execute notebooks helper (used for conversion/training)
 # --------------------------
-def execute_notebooks(notebooks_path, notebooks_list):
+def execute_notebooks(notebooks_path, notebooks_list, parameters=None):
     """
     Execute a list of notebooks using papermill via subprocess, stream output to output_box/log.
-    This function runs synchronously (should be called from a worker thread).
+    Can inject parameters (dict) into the notebooks.
     """
+    parameters = parameters or {}
     for nb in notebooks_list:
         if app_closing:
             return
         input_nb = os.path.join(notebooks_path, nb)
         output_nb = os.path.join(notebooks_path, "executed_" + nb)
         log(f"Running notebook: {nb} ...")
+
+        # Build papermill command
         cmd = [sys.executable, "-m", "papermill", input_nb, output_nb]
+        for k, v in parameters.items():
+            cmd += ["-p", str(k), str(v)]
+
         try:
             proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
             register_process(proc)
@@ -315,39 +321,73 @@ def execute_notebooks(notebooks_path, notebooks_list):
         else:
             log(f"Error running {nb}, return code: {proc.returncode}")
 
+
+# --------------------------
+# Task pipeline (background worker)
+# --------------------------
 # --------------------------
 # Task pipeline (background worker)
 # --------------------------
 def run_task_pipeline(task):
-    """
-    Orchestrates:
-      - conversion notebooks (papermill)
-      - load FFT NP arrays and plot
-      - training notebooks (papermill)
-      - show outputs of executed training notebook in CM tab
-    Should be called from a worker thread (we use start_worker).
-    """
     if app_closing:
         return
 
-    # 1) ADC -> FFT conversion notebooks
+    # 1) ADC -> FFT conversion notebooks with per-notebook label info
     conversion_notebooks_path = "/Users/mandarkale/Documents/MyProjects/MachineLearning/FIUS_Based_Infant_Presence_Detection_in_Car_Seats/source_code/Notebooks/Exploration"
+
     conversion_map = {
-        "Task1": ["ADC to FFT Emptyseat.ipynb", "ADC to FFT Carrierseat.ipynb"],
-        "Task2": ["ADC to FFT Withbaby.ipynb"],
-        "Task3": ["ADC to FFT Blanket and Sunscreen.ipynb"]
+        "Task1": [
+            {"notebook": "ADC to FFT Emptyseat.ipynb", "label_column_name": "Object_Presence", "label_value": 0},
+            {"notebook": "ADC to FFT Carrierseat.ipynb", "label_column_name": "Object_Presence", "label_value": 1},
+        ],
+        "Task2": [
+            {"notebook": "ADC to FFT Carrierseat.ipynb", "label_column_name": "Infant_Presence", "label_value": 0},
+            {"notebook": "ADC to FFT Withbaby.ipynb", "label_column_name": "Infant_Presence", "label_value": 1},
+        ],
+        "Task3": [
+            {"notebook": "ADC to FFT Blanket and Sunscreen.ipynb", "label_column_name": "Infant_Presence", "label_value": 1},
+        ],
     }
+
     conv_list = conversion_map.get(task, [])
-    if conv_list:
-        execute_notebooks(conversion_notebooks_path, conv_list)
-        log("ADC -> FFT conversion finished ✅")
+    for nb_info in conv_list:
+        execute_notebooks(
+            conversion_notebooks_path,
+            [nb_info["notebook"]],
+            parameters={
+                "label_column_name": nb_info["label_column_name"],
+                "label_value": nb_info["label_value"]
+            }
+        )
+
+    log("ADC -> FFT conversion finished ✅")
 
     # 2) plot FFTs (from npy)
-    fft_npy_paths = [
-        "/Users/mandarkale/Documents/MyProjects/MachineLearning/FIUS_Based_Infant_Presence_Detection_in_Car_Seats/source_code/Data/Processed/Emptyseat_npy_array_Lowpassfiltered_label.npy",
-        "/Users/mandarkale/Documents/MyProjects/MachineLearning/FIUS_Based_Infant_Presence_Detection_in_Car_Seats/source_code/Data/Processed/CarrierSeat_withoutBaby_Lowpassfilered_Label_0.npy"
-    ]
-    plot_fft_from_numpy(fft_npy_paths)
+    fft_base_path = "/Users/mandarkale/Documents/MyProjects/MachineLearning/FIUS_Based_Infant_Presence_Detection_in_Car_Seats/source_code/Data/Processed"
+
+    # Define numpy arrays for each task
+    task_fft_files = {
+        "Task1": [
+            os.path.join(fft_base_path, "Emptyseat_npy_array_Lowpassfiltered_label.npy"),
+            os.path.join(fft_base_path, "CarrierSeat_Lowpassfiltered_Label_0_Infant_Presence.npy")
+        ],
+        "Task2": [
+            os.path.join(fft_base_path, "CarrierSeat_Lowpassfiltered_Label_0_Infant_Presence.npy"),
+            os.path.join(fft_base_path, "Withbaby_npy_array_Lowpassfiltered.npy")
+        ],
+        "Task3": [
+            os.path.join(fft_base_path, "Blanket_and_Sunscreen_npy_array_Lowpassfiltered_Label_1.npy")
+        ]
+    }
+
+    # Only include files that actually exist
+    fft_npy_paths = [path for path in task_fft_files.get(task, []) if os.path.exists(path)]
+
+    if fft_npy_paths:
+        plot_fft_from_numpy(fft_npy_paths)
+    else:
+        log(f"No FFT numpy files found for {task}.")
+
 
     # 3) training notebooks
     training_notebooks_path = "/Users/mandarkale/Documents/MyProjects/MachineLearning/FIUS_Based_Infant_Presence_Detection_in_Car_Seats/source_code/Notebooks/Training"
@@ -363,10 +403,13 @@ def run_task_pipeline(task):
 
     # 4) show outputs of the executed training notebook (prefer executed_*.ipynb)
     if train_list:
-        # pass the original notebook path (show_notebook_output_in_tab will prefer executed_ if present)
         original_nb = os.path.join(training_notebooks_path, train_list[0])
         show_notebook_output_in_tab(original_nb)
 
+
+# --------------------------
+# Task window GUI
+# --------------------------
 # --------------------------
 # Task window GUI
 # --------------------------
@@ -387,6 +430,20 @@ def run_task_window(task_name):
     tk.Button(task_win, text="Close", width=25, command=task_win.destroy).pack(pady=5)
 
     def _start_task():
+        # --------------------------
+        # Clear previous task outputs
+        # --------------------------
+        if cm_output_box and cm_output_box.winfo_exists():
+            cm_output_box.delete("1.0", tk.END)
+        for lbl in fft_img_labels:
+            try:
+                lbl.config(image="")
+                lbl.destroy()
+            except Exception:
+                pass
+        fft_img_labels.clear()
+        fft_img_tks.clear()
+        
         log(f"Starting {task_name}...")
         progress.config(mode="indeterminate")
         progress.start(8)
@@ -426,6 +483,7 @@ def run_task_window(task_name):
         start_worker(worker)
 
     start_btn.config(command=_start_task)
+
 
 # --------------------------
 # Clean shutdown handler
